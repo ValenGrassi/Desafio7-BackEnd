@@ -1,15 +1,17 @@
 import express from "express"
-import { puerto } from "./config/servidor.js"
 import {engine} from "express-handlebars"
-import viewsRouter from "./routers/viewsRouter.js"
-import sessionRouter from "./routers/sessionRouter.js"
+import routerViews from "./routers/routerViews.js"
 import mongoose from "mongoose"
 import MongoStore from "connect-mongo"
 import session from "express-session"
-import { ATLAS_DIR } from "./config/servidor.js"
+import { passportInitialize, passportSession } from "./middlewares/passport.js"
+import { apiRouter } from "./routers/apiRouter.js"
+import { COOKIE_SECRET, MONGODB_CNX_STR, PORT } from "./config/config.js"
+import cookieParser from "cookie-parser"
 
 const app = express()
-const connection = mongoose.connect(ATLAS_DIR,({
+
+const connection = mongoose.connect(MONGODB_CNX_STR,({
     useNewUrlParser: true,
     useUnifiedTopology: true
 }))
@@ -18,6 +20,8 @@ app.engine("handlebars", engine())
 app.set("views", "./views")
 app.set("view engine", "handlebars")
 
+app.use(cookieParser(COOKIE_SECRET ))
+
 app.use(express.json())
 app.use(express.static("./public"))
 app.use(express.urlencoded({ extended: true }))
@@ -25,7 +29,7 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use(session({
     store: new MongoStore({
-        mongoUrl: ATLAS_DIR,
+        mongoUrl: MONGODB_CNX_STR,
         ttl: 3600
     }),
     secret: "secretito",
@@ -33,10 +37,9 @@ app.use(session({
     saveUninitialized: false
 }))
 
+app.use(passportInitialize, passportSession)
 
+app.use("/", routerViews)
+app.use("/api", apiRouter)
 
-
-app.use("/", viewsRouter)
-app.use("/api/sessions", sessionRouter)
-
-app.listen(puerto, () => {console.log(`conectado a ${puerto}`)})
+app.listen(PORT, () => {console.log(`conectado a ${PORT}`)})

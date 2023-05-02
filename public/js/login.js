@@ -12,7 +12,7 @@ loginForm.addEventListener('submit', event => {
             'Content-Type': 'application/json'
         }
     }).then(result => {
-        if (result.status === 200) {
+        if (result.status === 201) {
             window.location.replace('/user')
         }
     })
